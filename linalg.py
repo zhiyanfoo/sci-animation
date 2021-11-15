@@ -5,8 +5,7 @@ def project_u_on_v(u, v):
     return r
 
 def normalize(v):
-    return v/ np.linalg.norm(v)
-
+    return v / np.linalg.norm(v)
 
 def reflection_sphere_line(sphere, line):
     d = sphere.velocity
