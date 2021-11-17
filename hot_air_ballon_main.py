@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import random
 from numpy import pi
 import numpy as np
+import matplotlib.image as mpimg
 
 from animation import animate
 from draw import draw
@@ -30,6 +31,9 @@ def main():
     fig = plt.figure(dpi=150)
     ax = plt.axes(xlim=(-10, 110), ylim=(-10, 110))
     plt.gca().set_aspect('equal', adjustable='box')
+    img = mpimg.imread("assets/balloon.png")
+    imgplot = plt.imshow(img)
+    # plt.show()
     # plt.axis('equal')
     # plt.axis('square')
     circles = setup(ax)

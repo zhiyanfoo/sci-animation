@@ -4,3 +4,4 @@ lib
 bin
 pyvenv.cfg
 *.mp4
+assets

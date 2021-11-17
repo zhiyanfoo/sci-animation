@@ -14,7 +14,7 @@ class Circle:
         self.inner_shell_radius = inner_shell_radius
         self.choose_new_axis()
         self.matplotlib_circle_outer =  plt.Circle(self.origin, self.inner_shell_radius,
-                color="red", zorder=10)
+                color="green", zorder=10)
         self.matplotlib_circle_inner =  plt.Circle(self.origin, self.radius, color="aqua",
                 zorder=1)
         for i in range(2):
