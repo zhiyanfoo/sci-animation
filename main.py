@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import random
 from math import pi, sin, cos
 from dataclasses import dataclass
 from typing import Tuple, Any
@@ -6,13 +8,20 @@ import numpy as np
 from intersection import circle_line_intersection, circle_circle_intersection
 from linalg import project_u_on_v, reflection_sphere_line, normalize
 from matplotlib import animation
-
 import random
+
+hot_air_balloon = mpimg.imread('HotAirBalloon/BalloonTest.PNG')
+background = mpimg.imread('HotAirBalloon/Background.PNG')
+
+CIRCLE_START_Y = 100
 
 random.seed(0)
 
 fig = plt.figure()
-ax = plt.axes(xlim=(0, 100), ylim=(0, 100))
+ax = plt.axes(xlim=[0, 200], ylim=[0, 100])
+
+ax.imshow(background, zorder=0, extent=[0, 200, 0, 150])
+ax.imshow(hot_air_balloon, zorder=1, extent=[50, 150, 0, 150])
 
 RADIUS = 30
 r2 = (RADIUS - 3) ** 2
@@ -50,14 +59,21 @@ def new_velocity_sphere_sphere(v1, v2, x1, x2):
 
 
 class Circle:
-    def __init__(self, origin, radius):
+    def __init__(self, origin, radius, color):
+        self.x = np.array(origin)[0]
+        self.y = np.array(origin)[1]
         self.origin = np.array(origin)
         self.radius = radius
-        self.matplotlib_circle = plt.Circle(self.origin, self.radius)
-        va = 0.04
+        self.color = color
+        self.matplotlib_circle = plt.Circle(self.origin, self.radius, color=self.color)
+        if (self.color == 'green'):
+            va = 0.20
+        else:
+            va = 0.04
         self.velocity = np.array([random.uniform(-va, va), random.uniform(-va, va)])
         self.dirty = False
         self.heat = 0
+        
 
     def plot_2d(self, ax_2d, **kwargs):
         ax_2d.add_patch(self.matplotlib_circle)
@@ -107,7 +123,25 @@ class Circle:
         if extra:
             self.origin += 1.1 * self.velocity
         else:
-            self.origin += self.velocity
+            v = self.velocity
+            if self.color == 'green':
+                if (self.origin[0] < 50):
+                    self.origin[0] = 50
+                if (self.origin[0] > 150):
+                    self.origin[0] = 150
+                if (self.origin[1] < 50):
+                    self.origin[1] = 50
+                if (self.origin[1] > 140):
+                    self.origin[1] = 140
+
+                if (self.origin[0] + v[0] < 50 or self.origin[0] + v[0] > 150 or 
+                    self.origin[1] + v[1] < 50 or self.origin[1] + v[1] > 140):
+                    self.velocity = -self.velocity
+                    self.origin += self.velocity
+                else:
+                    self.origin += self.velocity
+            else:
+                self.origin += self.velocity
 
         self.matplotlib_circle.circle = self.origin
 
@@ -137,7 +171,7 @@ def get_circles():
 
             d1 = random.uniform(-1, 1)
             d2 = random.uniform(-1, 1)
-            circle = Circle((50 + i + d1, 50 + j +  d2) , 2)
+            circle = Circle((50 + i + d1, CIRCLE_START_Y + j +  d2), 2, 'g')
 
             intersects = False
             for line in balloon_polygon:
@@ -151,6 +185,29 @@ def get_circles():
 
             circles.append(circle)
 
+    return circles
+
+def get_circles_outside():
+    circles = []
+    for j in range(0, 150, 10):
+        for i in range(0, 200, 10):
+            # if (i) ** 2 + (j) ** 2 > r2:
+            #     continue
+
+            d1 = random.uniform(-1, 1)
+            d2 = random.uniform(-1, 1)
+            circle = Circle((i + d1, j +  d2), 2, 'blue')
+
+            intersects = False
+            for line in balloon_polygon:
+                if (circle_line_intersection(circle, line)):
+                    intersects = True
+                    break
+
+            if intersects:
+                continue
+
+            circles.append(circle)
     return circles
 
 
@@ -167,11 +224,12 @@ def two_circles():
 
 
 
-circles = get_circles()
+circles = get_circles_outside()
+#circles.append(get_circles_outside())
 
 def init():
-    for line in balloon_polygon:
-        line.plot_2d(ax)
+    # for line in balloon_polygon:
+    #    line.plot_2d(ax)
 
     for circle in circles:
         circle.plot_2d(ax)
@@ -185,49 +243,50 @@ def draw():
     init()
     plt.savefig('out.png')
 
-balloon_circle = Circle((50, 50), RADIUS-3)
+balloon_circle = Circle((50, 50), RADIUS-3, 'g')
 
 def next_frame(i):
-    # for circle in circles:
-    #     if circle_circle_intersection(circle, balloon_circle):
-    #         if circle.heat < 40:
-    #             circle.velocity *= 1.02
-    #             circle.heat += 1
-
     for i in range(3):
         for circle in circles:
             circle.move(False)
 
-        for circle in circles:
-            circle.resolve_collisions()
+        # for circle in circles:
+        #    circle.resolve_collisions()
 
         for circle in circles:
             circle.dirty = False
+        
+    found = False
+    index = 0
 
+    global BACKGROUND_LOWER
+    global BACKGROUND_UPPER
+    global img
 
-    # if (i > 4):
-    #     exit()
+    while not found:
+        circle = circles[index]
+        if (circle.origin[0] > 50 and circle.origin[0] < 150 and 
+            circle.origin[1] > 50 and circle.origin[1] < 140 
+        and circle.color != 'green'):
+            found = True
+            del circles[index]
+            newCircle = Circle((circle.x, circle.y), 2, 'green')
+            newCircle.plot_2d(ax)
+            circles.append(newCircle)
+            break
+        else:
+            index += 1
+            if (found or index > len(circles) - 1): break
 
     return [circle.matplotlib_circle for circle in circles]
-
-
 
 def animate():
     anim = animation.FuncAnimation(fig, next_frame,
                                    init_func=init,
-                                   frames=25 * 60,
+                                   frames=10 * 60,
                                    interval=40,
                                    blit=True)
     grid.init_grid(circles, balloon_polygon)
     plt.show()
 
-# draw()
 animate()
-
-# v1 = np.array([0, 0])
-# v2 = np.array([-1, 0])
-# x1 = np.array(0)
-# x2 = np.array([-1,0.5])
-
-# print(new_velocity_sphere_sphere(v1, v2, x1, x2))
-
