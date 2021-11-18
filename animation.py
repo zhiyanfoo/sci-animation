@@ -8,7 +8,9 @@ def animate(init_func, next_frame, fig):
                                    init_func=init_func,
                                    frames=40 * 60,
                                    interval=interval,
-                                   blit=True)
-    # writervideo = animation.FFMpegWriter(fps=fps, bitrate=5000)
-    # anim.save("output5.mp4", writer=writervideo)
-    plt.show()
+                                   blit=True,
+                                   save_count=400,
+                                   )
+    writervideo = animation.FFMpegWriter(fps=fps, bitrate=5000)
+    anim.save("output5.mp4", writer=writervideo)
+    # plt.show()

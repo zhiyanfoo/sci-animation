@@ -3,24 +3,39 @@ import random
 from numpy import pi
 import numpy as np
 import matplotlib.image as mpimg
+import cv2
 
 from animation import animate
 from draw import draw
-from circle import Circle
+from circle import Circle, linear_interpolation
+from resize import resize_linear
+
+img_hot_air_obj = None
 
 def setup(ax):
     inner_circles = []
+    grow_frame_start = 0
+    grow_frame_end = 200
+    height_raise_info=(grow_frame_start + 150, grow_frame_end + 250, 0, 60)
+    li_balloon_height = linear_interpolation(*height_raise_info)
     for i in range(-30, 30, 5):
         for j in range(-30, 30, 5):
-            if i ** 2 + j ** 2 > 30**2:
+            if i ** 2 + j ** 2 > 29**2:
                 continue
             circle = Circle(
                     (50 + i, 50 + j),
-                    (50 + 1.3 *i, 50 + 1.3 * j),
-                     0.6, 3, 0.5, 1.3, 0, 200)
+                    (50 + 1.5 *i, 50 + 1.5 * j),
+                     inner_shell_radius=0.6,
+                     outer_shell_radius=3,
+                     start_volatility=0.5,
+                     end_volatility=1.8,
+                     grow_frame_start=0,
+                     grow_frame_end=200,
+                     height_raise_info=height_raise_info
+                     )
             inner_circles.append(circle)
 
-    return inner_circles
+    return inner_circles, li_balloon_height
 
 def setup_single(ax):
     inner_circles = [Circle((50, 50), 2)]
@@ -30,13 +45,17 @@ def setup_single(ax):
     return inner_circles
 
 def main():
-    fig = plt.figure(dpi=150)
-    ax = plt.axes(xlim=(-10, 110), ylim=(-10, 110))
+    fig = plt.figure(dpi=150, frameon=False)
+    ax = plt.axes(xlim=(-250, 360), ylim=(-100, 220))
     plt.gca().set_aspect('equal', adjustable='box')
+    img_hot_air = mpimg.imread('assets/hot_air_balloon.png')
+    img_background = mpimg.imread('assets/background.png')
+    ax.set_axis_off()
+
     # plt.show()
     # plt.axis('equal')
     # plt.axis('square')
-    circles = setup(ax)
+    circles, li_balloon_height = setup(ax)
     # circles = setup_single()
     # circles = [plt.Circle((0, 0), 2)]
     patches = ([circle.matplotlib_circle_inner for circle in circles]) + ([circle.matplotlib_circle_outer for circle in circles])
@@ -45,16 +64,21 @@ def main():
         frame_index = 0
         vibration_length = 4
         start = random.randint(0, vibration_length)
-        while True:
-            for i in range(start, vibration_length):
-                circle.vibrate(True, frame_index)
-                i = yield
+        circle.choose_new_axis(0)
 
-            for i in range(vibration_length):
+        for _ in range(start):
+            circle.vibrate(True, 0)
+
+        while True:
+            for _ in range(start, vibration_length):
+                circle.vibrate(True, frame_index)
+                frame_index = yield
+
+            for _ in range(vibration_length):
                 circle.vibrate(False, frame_index)
                 frame_index = yield
 
-            for i in range(start):
+            for _ in range(start):
                 circle.vibrate(True, frame_index)
                 frame_index = yield
 
@@ -67,11 +91,22 @@ def main():
     def init_func():
         for circle in circles:
             circle.plot_2d(ax)
+        global img_hot_air_obj
+        img_hot_air_obj = ax.imshow(img_hot_air, zorder=2, extent=(-90, 205, -100, 100))
+        imo_background_obj = ax.imshow(img_background, zorder=0, extent=(-90, 205, -100, 200))
+        patches.append(img_hot_air_obj)
+        patches.append(imo_background_obj)
         return patches
 
     def next_frame(i):
         for circle in circle_generators:
             circle.send(i)
+        original_bottom, original_top = -100, 100
+        new_height_gain = li_balloon_height(i)
+        # print("nh gain", new_height_gain)
+        global img_hot_air_obj
+        img_hot_air_obj.set_extent(
+                (-90, 205, -100 + new_height_gain, 100 + new_height_gain))
         return patches
 
     animate(init_func, next_frame, fig)
