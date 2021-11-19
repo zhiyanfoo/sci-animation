@@ -12,5 +12,5 @@ def animate(init_func, next_frame, fig):
                                    save_count=400,
                                    )
     writervideo = animation.FFMpegWriter(fps=fps, bitrate=5000)
-    anim.save("output5.mp4", writer=writervideo)
+    anim.save("output4.mp4", writer=writervideo)
     # plt.show()

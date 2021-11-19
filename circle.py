@@ -45,9 +45,9 @@ class Circle:
         self.end_position = np.array(end_position, dtype=float)
         self.inner_shell_radius = inner_shell_radius
         self.outer_shell_radius = outer_shell_radius
-        self.matplotlib_circle_outer =  plt.Circle(self.origin, self.inner_shell_radius,
+        self.matplotlib_circle_inner =  plt.Circle(self.origin, self.inner_shell_radius,
                 color="green", zorder=10)
-        self.matplotlib_circle_inner =  plt.Circle(self.origin, self.outer_shell_radius, color="aqua",
+        self.matplotlib_circle_outer =  plt.Circle(self.origin, self.outer_shell_radius, color="aqua",
                 zorder=4)
         self.grow_frame_start = grow_frame_start
         self.grow_frame_end = grow_frame_end
